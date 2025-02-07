@@ -1,10 +1,20 @@
-# Legend of the Wispguard: Build a Zelda-Like Game in Phaser 3 Course Code
+# Legend of the Wispguard
 
-This repo is the official code repository for the <a href="TODO" target="_blank">Legend of the Wispguard: Build a Zelda-Like Game in Phaser 3 Course</a> that is available on YouTube.
+![License](https://img.shields.io/badge/license-MIT-green)
+
+![Monster Tamer Logo](/docs/logo.png?raw=true 'Monster Tamer Logo')
+
+Legend of the Wispguard - Zelda-like Tutorial with [Phaser 3](https://github.com/photonstorm/phaser)!
+
+This repo is the official code repository for the <a href="https://www.youtube.com/playlist?list=PLmcXe0-sfoShPM_vCNsuumh7crnNaLCwX" target="_blank">Legend of the Wispguard: Build a Zelda-Like Game in Phaser 3 Course</a> that is available on YouTube.
 
 ## Demo
 
-TODO
+You can find a playable demo of the game on Itch.io here: [Legend of the Wispguard](https://galemius.itch.io/legend-of-the-wispguard)
+
+![Game play Screenshot 1](/docs/screenshot1.png?raw=true 'Screenshot 1')
+![Game play Screenshot 2](/docs/screenshot2.png?raw=true 'Screenshot 2')
+![Game play Screenshot 3](/docs/screenshot3.png?raw=true 'Screenshot 3')
 
 ## How To Play
 
@@ -14,9 +24,10 @@ Currently, the only supported way to play the game is with a Keyboard.
 
 | Keys                                   | Description                                                                                           |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Arrow Keys (Up, Down, Left, and Right) | Moves the player.                                                                                     |
-| Space                                  | TODO                                     |
-| Shift                                  | TODO |
+| Arrow Keys (Up, Down, Left, and Right) | Moves the player. Navigate menu.                                                                      |
+| Z                                      | Attack                                                                                                |
+| X                                      | Lift/Throw                                                                                            |
+| Enter                                  | Select menu option.                                                                                   |
 
 
 ## Local Development
@@ -63,12 +74,14 @@ Any static assets like images or audio files should be placed in the `public` fo
 
 This project would have not been possible without the use of some awesome assets created by some amazing artists! This project would not have been possible without the following people/resources:
 
-| Asset                       | Author           | Link                                                                                              |
-| --------------------------- | ---------------- | ------------------------------------------------------------------------------------------------- |
-| Fonts                       | Kenney           | [Kenney Fonts](https://www.kenney.nl/assets/kenney-fonts)                                         |
+| Asset                       | Author           | Link                                                                   |
+| --------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| Press Start 2P Font         | CodeMan38        | [Kenney Fonts](https://fonts.google.com/specimen/Press+Start+2P)       |
+| Player                      | Foozle           | [Legend Main Character](https://foozlecc.itch.io/legend-main-character)|
+| Enemies                     | Foozle           | [Legend Enemy Pack 1](https://foozlecc.itch.io/legend-enemy-pack-1)    |
+| Dungeon Pack                | Foozle           | [Legend Spider Dungeon](https://foozlecc.itch.io/legend-spider-dungeon)|
+| UI Icons                    | Foozle           | [Legend UI Icons](https://foozlecc.itch.io/legend-ui-icons)            |
 
 ## Issues
 
-TODO
-
-For any issues you encounter, please open a new [GitHub Issue](https://github.com/devshareacademy/monster-tamer/issues) on this project.
+For any issues you encounter, please open a new [GitHub Issue](https://github.com/devshareacademy/phaser-zelda-like-tutorial/issues) on this project.
