@@ -1,7 +1,6 @@
 import { isArcadePhysicsBody } from '../../../../common/utils';
 import { BaseCharacterState } from './base-character-state';
 import { CHARACTER_STATES } from './character-states';
-import { PLAYER_ANIMATION_KEYS } from '../../../../common/assets';
 import { Player } from '../../../../game-objects/player/player';
 
 export class IdleState extends BaseCharacterState {
@@ -11,9 +10,7 @@ export class IdleState extends BaseCharacterState {
 
   public onEnter(): void {
     // play idle animation based on game object direction
-    // TODO: update based on direction
-    console.log(this._gameObject.direction);
-    this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.IDLE_DOWN, repeat: -1 }, true);
+    this._gameObject.animationComponent.playAnimation(`IDLE_${this._gameObject.direction}`);
 
     // reset game object velocity
     if (isArcadePhysicsBody(this._gameObject.body)) {

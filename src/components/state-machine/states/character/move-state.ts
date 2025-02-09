@@ -1,4 +1,3 @@
-import { PLAYER_ANIMATION_KEYS } from '../../../../common/assets';
 import { BaseCharacterState } from './base-character-state';
 import { CHARACTER_STATES } from './character-states';
 import { Player } from '../../../../game-objects/player/player';
@@ -22,11 +21,9 @@ export class MoveState extends BaseCharacterState {
 
     // vertical movement
     if (controls.isUpDown) {
-      this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_UP, repeat: -1 }, true);
       this.#updateVelocity(false, -1);
       this.#updateDirection(DIRECTION.UP);
     } else if (controls.isDownDown) {
-      this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_DOWN, repeat: -1 }, true);
       this.#updateVelocity(false, 1);
       this.#updateDirection(DIRECTION.DOWN);
     } else {
@@ -38,16 +35,14 @@ export class MoveState extends BaseCharacterState {
     if (controls.isLeftDown) {
       this.#flip(true);
       this.#updateVelocity(true, -1);
-      this.#updateDirection(DIRECTION.LEFT);
       if (!isMovingVertically) {
-        this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_SIDE, repeat: -1 }, true);
+        this.#updateDirection(DIRECTION.LEFT);
       }
     } else if (controls.isRightDown) {
       this.#flip(false);
       this.#updateVelocity(true, 1);
-      this.#updateDirection(DIRECTION.RIGHT);
       if (!isMovingVertically) {
-        this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_SIDE, repeat: -1 }, true);
+        this.#updateDirection(DIRECTION.RIGHT);
       }
     } else {
       this.#updateVelocity(true, 0);
@@ -82,5 +77,6 @@ export class MoveState extends BaseCharacterState {
 
   #updateDirection(direction: Direction): void {
     this._gameObject.direction = direction;
+    this._gameObject.animationComponent.playAnimation(`WALK_${this._gameObject.direction}`);
   }
 }
