@@ -36,13 +36,13 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // add components
+    // add shared components
     this._controlsComponent = new ControlsComponent(this, inputComponent);
     this._speedComponent = new SpeedComponent(this, speed);
     this._directionComponent = new DirectionComponent(this);
     this._animationComponent = new AnimationComponent(this, animationConfig);
 
-    // add state machine
+    // create state machine
     this._stateMachine = new StateMachine(id);
 
     // general config

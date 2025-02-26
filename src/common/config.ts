@@ -1,5 +1,8 @@
-export const ENABLE_LOGGING = true;
+export const ENABLE_LOGGING = false;
 
 export const PLAYER_SPEED = 80;
 
 export const ENEMY_SPIDER_SPEED = 80;
+export const ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_MIN = 500;
+export const ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_MAX = 1500;
+export const ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_WAIT = 200;
