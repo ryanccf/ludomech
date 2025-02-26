@@ -7,6 +7,7 @@ import { SpeedComponent } from '../../components/game-object/speed-component';
 import { DirectionComponent } from '../../components/game-object/direction-component';
 import { AnimationComponent, AnimationConfig } from '../../components/game-object/animation-component';
 import { InvulnerableComponent } from '../../components/game-object/invulnerable-component';
+import { CHARACTER_STATES } from '../../components/state-machine/states/character/character-states';
 
 export type CharacterConfig = {
   scene: Phaser.Scene;
@@ -94,7 +95,20 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite {
     return this._animationComponent;
   }
 
+  get invulnerableComponent(): InvulnerableComponent {
+    return this._invulnerableComponent;
+  }
+
   public update(): void {
     this._stateMachine.update();
+  }
+
+  public hit(direction: Direction): void {
+    // check if character is invulnerable, if not update state to be hurt
+    if (this._invulnerableComponent.invulnerable) {
+      return;
+    }
+
+    this._stateMachine.setState(CHARACTER_STATES.HURT_STATE, direction);
   }
 }

@@ -5,12 +5,13 @@ import { Player } from '../game-objects/player/player';
 import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
+import { CharacterGameObject } from '../game-objects/common/character-game-object';
+import { DIRECTION } from '../common/common';
 
 export class GameScene extends Phaser.Scene {
   #controls!: KeyboardComponent;
   #player!: Player;
-  #spider!: Spider;
-  #wisp!: Wisp;
+  #enemyGroup!: Phaser.GameObjects.Group;
 
   constructor() {
     super({
@@ -34,21 +35,35 @@ export class GameScene extends Phaser.Scene {
       controls: this.#controls,
     });
 
-    this.#spider = new Spider({
-      scene: this,
-      position: { x: this.scale.width / 2, y: this.scale.height / 2 + 50 },
-    });
-    this.#spider.setCollideWorldBounds(true);
+    this.#enemyGroup = this.add.group(
+      [
+        new Spider({
+          scene: this,
+          position: { x: this.scale.width / 2, y: this.scale.height / 2 + 50 },
+        }),
+        new Wisp({
+          scene: this,
+          position: { x: this.scale.width / 2, y: this.scale.height / 2 - 50 },
+        }),
+      ],
+      { runChildUpdate: true },
+    );
 
-    this.#wisp = new Wisp({
-      scene: this,
-      position: { x: this.scale.width / 2, y: this.scale.height / 2 - 50 },
-    });
-    this.#wisp.setCollideWorldBounds(true);
+    this.#registerColliders();
   }
 
-  public update(): void {
-    this.#spider.update();
-    this.#wisp.update();
+  #registerColliders(): void {
+    // register collisions between enemies and current "room"
+    this.#enemyGroup.getChildren().forEach((enemy) => {
+      const enemyGameObject = enemy as CharacterGameObject;
+      enemyGameObject.setCollideWorldBounds(true);
+    });
+
+    // register collisions between player and enemies
+    this.physics.add.overlap(this.#player, this.#enemyGroup, (player, enemy) => {
+      this.#player.hit(DIRECTION.DOWN);
+      const enemyGameObject = enemy as CharacterGameObject;
+      enemyGameObject.hit(this.#player.direction);
+    });
   }
 }
