@@ -7,6 +7,7 @@ import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
 import { DIRECTION } from '../common/common';
+import { PLAYER_START_MAX_HEALTH } from '../common/config';
 
 export class GameScene extends Phaser.Scene {
   #controls!: KeyboardComponent;
@@ -33,6 +34,8 @@ export class GameScene extends Phaser.Scene {
       scene: this,
       position: { x: this.scale.width / 2, y: this.scale.height / 2 },
       controls: this.#controls,
+      maxLife: PLAYER_START_MAX_HEALTH,
+      currentLife: PLAYER_START_MAX_HEALTH,
     });
 
     this.#enemyGroup = this.add.group(
@@ -61,9 +64,9 @@ export class GameScene extends Phaser.Scene {
 
     // register collisions between player and enemies
     this.physics.add.overlap(this.#player, this.#enemyGroup, (player, enemy) => {
-      this.#player.hit(DIRECTION.DOWN);
+      this.#player.hit(DIRECTION.DOWN, 1);
       const enemyGameObject = enemy as CharacterGameObject;
-      enemyGameObject.hit(this.#player.direction);
+      enemyGameObject.hit(this.#player.direction, 1);
     });
   }
 }
