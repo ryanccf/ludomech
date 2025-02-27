@@ -76,7 +76,7 @@ This project would have not been possible without the use of some awesome assets
 
 | Asset                       | Author           | Link                                                                   |
 | --------------------------- | ---------------- | ---------------------------------------------------------------------- |
-| Press Start 2P Font         | CodeMan38        | [Kenney Fonts](https://fonts.google.com/specimen/Press+Start+2P)       |
+| Press Start 2P Font         | CodeMan38        | [Google Fonts](https://fonts.google.com/specimen/Press+Start+2P)       |
 | Player                      | Foozle           | [Legend Main Character](https://foozlecc.itch.io/legend-main-character)|
 | Enemies                     | Foozle           | [Legend Enemy Pack 1](https://foozlecc.itch.io/legend-enemy-pack-1)    |
 | Dungeon Pack                | Foozle           | [Legend Spider Dungeon](https://foozlecc.itch.io/legend-spider-dungeon)|
