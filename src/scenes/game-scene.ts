@@ -12,7 +12,12 @@ import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
 import { GameObject, LevelData } from '../common/types';
 import { CUSTOM_EVENTS, EVENT_BUS } from '../common/event-bus';
-import { getDirectionOfObjectFromAnotherObject, isArcadePhysicsBody } from '../common/utils';
+import {
+  exhaustiveGuard,
+  getDirectionOfObjectFromAnotherObject,
+  isArcadePhysicsBody,
+  isLevelName,
+} from '../common/utils';
 import { TiledRoomObject } from '../common/tiled/types';
 import { TILED_LAYER_NAMES, TILED_TILESET_NAMES } from '../common/tiled/common';
 import {
@@ -238,9 +243,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   #setupPlayer(): void {
+    const startingDoor = this.#objectsByRoomId[this.#levelData.roomId].doorMap[this.#levelData.doorId];
+    const playerStartPosition = {
+      x: startingDoor.x + startingDoor.doorTransitionZone.width / 2,
+      y: startingDoor.y - startingDoor.doorTransitionZone.height / 2,
+    };
+    switch (startingDoor.direction) {
+      case DIRECTION.UP:
+        playerStartPosition.y += 40;
+        break;
+      case DIRECTION.DOWN:
+        playerStartPosition.y -= 40;
+        break;
+      case DIRECTION.LEFT:
+        playerStartPosition.x += 40;
+        break;
+      case DIRECTION.RIGHT:
+        playerStartPosition.x -= 40;
+        break;
+      default:
+        exhaustiveGuard(startingDoor.direction);
+    }
+
     this.#player = new Player({
       scene: this,
-      position: { x: this.scale.width / 2, y: this.scale.height / 2 },
+      position: { x: playerStartPosition.x, y: playerStartPosition.y },
       controls: this.#controls,
       maxLife: CONFIG.PLAYER_START_MAX_HEALTH,
       currentLife: CONFIG.PLAYER_START_MAX_HEALTH,
@@ -365,6 +392,15 @@ export class GameScene extends Phaser.Scene {
     this.#controls.isMovementLocked = true;
 
     const door = this.#objectsByRoomId[this.#currentRoomId].doorMap[doorTrigger.name] as Door;
+    if (isLevelName(door.targetLevel)) {
+      const sceneData: LevelData = {
+        level: door.targetLevel,
+        roomId: door.targetRoomId,
+        doorId: door.targetDoorId,
+      };
+      this.scene.start(SCENE_KEYS.GAME_SCENE, sceneData);
+      return;
+    }
     const targetDoor = this.#objectsByRoomId[door.targetRoomId].doorMap[door.targetDoorId];
 
     // disable body on game object so we stop triggering the collision
