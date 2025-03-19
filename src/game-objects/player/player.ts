@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { Position } from '../../common/types';
+import { GameObject, Position } from '../../common/types';
 import { InputComponent } from '../../components/input/input-component';
 import { IdleState } from '../../components/state-machine/states/character/idle-state';
 import { CHARACTER_STATES } from '../../components/state-machine/states/character/character-states';
@@ -11,6 +11,13 @@ import { CharacterGameObject } from '../common/character-game-object';
 import { HurtState } from '../../components/state-machine/states/character/hurt-state';
 import { flash } from '../../common/juice-utils';
 import { DeathState } from '../../components/state-machine/states/character/death-state';
+import { CollidingObjectsComponent } from '../../components/game-object/colliding-objects-component';
+import { LiftState } from '../../components/state-machine/states/character/lift-state';
+import { OpenChestState } from '../../components/state-machine/states/character/open-chest-state';
+import { IdleHoldingState } from '../../components/state-machine/states/character/idle-holding-state';
+import { MoveHoldingState } from '../../components/state-machine/states/character/move-holding-state';
+import { HeldGameObjectComponent } from '../../components/game-object/held-game-object-component';
+import { ThrowState } from '../../components/state-machine/states/character/throw-state';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -21,6 +28,8 @@ export type PlayerConfig = {
 };
 
 export class Player extends CharacterGameObject {
+  #collidingObjectsComponent: CollidingObjectsComponent;
+
   constructor(config: PlayerConfig) {
     // create animation config for component
     const animationConfig: AnimationConfig = {
@@ -40,6 +49,18 @@ export class Player extends CharacterGameObject {
       DIE_UP: { key: PLAYER_ANIMATION_KEYS.DIE_UP, repeat: 0, ignoreIfPlaying: true },
       DIE_LEFT: { key: PLAYER_ANIMATION_KEYS.DIE_SIDE, repeat: 0, ignoreIfPlaying: true },
       DIE_RIGHT: { key: PLAYER_ANIMATION_KEYS.DIE_SIDE, repeat: 0, ignoreIfPlaying: true },
+      IDLE_HOLD_DOWN: { key: PLAYER_ANIMATION_KEYS.IDLE_HOLD_DOWN, repeat: -1, ignoreIfPlaying: true },
+      IDLE_HOLD_UP: { key: PLAYER_ANIMATION_KEYS.IDLE_HOLD_UP, repeat: -1, ignoreIfPlaying: true },
+      IDLE_HOLD_LEFT: { key: PLAYER_ANIMATION_KEYS.IDLE_HOLD_SIDE, repeat: -1, ignoreIfPlaying: true },
+      IDLE_HOLD_RIGHT: { key: PLAYER_ANIMATION_KEYS.IDLE_HOLD_SIDE, repeat: -1, ignoreIfPlaying: true },
+      WALK_HOLD_DOWN: { key: PLAYER_ANIMATION_KEYS.WALK_HOLD_DOWN, repeat: -1, ignoreIfPlaying: true },
+      WALK_HOLD_UP: { key: PLAYER_ANIMATION_KEYS.WALK_HOLD_UP, repeat: -1, ignoreIfPlaying: true },
+      WALK_HOLD_LEFT: { key: PLAYER_ANIMATION_KEYS.WALK_HOLD_SIDE, repeat: -1, ignoreIfPlaying: true },
+      WALK_HOLD_RIGHT: { key: PLAYER_ANIMATION_KEYS.WALK_HOLD_SIDE, repeat: -1, ignoreIfPlaying: true },
+      LIFT_DOWN: { key: PLAYER_ANIMATION_KEYS.LIFT_DOWN, repeat: 0, ignoreIfPlaying: true },
+      LIFT_UP: { key: PLAYER_ANIMATION_KEYS.LIFT_UP, repeat: 0, ignoreIfPlaying: true },
+      LIFT_LEFT: { key: PLAYER_ANIMATION_KEYS.LIFT_SIDE, repeat: 0, ignoreIfPlaying: true },
+      LIFT_RIGHT: { key: PLAYER_ANIMATION_KEYS.LIFT_SIDE, repeat: 0, ignoreIfPlaying: true },
     };
 
     super({
@@ -67,7 +88,16 @@ export class Player extends CharacterGameObject {
       }),
     );
     this._stateMachine.addState(new DeathState(this));
+    this._stateMachine.addState(new LiftState(this));
+    this._stateMachine.addState(new OpenChestState(this));
+    this._stateMachine.addState(new IdleHoldingState(this));
+    this._stateMachine.addState(new MoveHoldingState(this));
+    this._stateMachine.addState(new ThrowState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+
+    // add components
+    this.#collidingObjectsComponent = new CollidingObjectsComponent(this);
+    new HeldGameObjectComponent(this);
 
     // enable auto update functionality
     config.scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this);
@@ -85,5 +115,14 @@ export class Player extends CharacterGameObject {
 
   get physicsBody(): Phaser.Physics.Arcade.Body {
     return this.body as Phaser.Physics.Arcade.Body;
+  }
+
+  public collidedWithGameObject(gameObject: GameObject): void {
+    this.#collidingObjectsComponent.add(gameObject);
+  }
+
+  public update(): void {
+    super.update();
+    this.#collidingObjectsComponent.reset();
   }
 }
