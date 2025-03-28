@@ -18,6 +18,7 @@ import { IdleHoldingState } from '../../components/state-machine/states/characte
 import { MoveHoldingState } from '../../components/state-machine/states/character/move-holding-state';
 import { HeldGameObjectComponent } from '../../components/game-object/held-game-object-component';
 import { ThrowState } from '../../components/state-machine/states/character/throw-state';
+import { AttackState } from '../../components/state-machine/states/character/attack-state';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -93,6 +94,7 @@ export class Player extends CharacterGameObject {
     this._stateMachine.addState(new IdleHoldingState(this));
     this._stateMachine.addState(new MoveHoldingState(this));
     this._stateMachine.addState(new ThrowState(this));
+    this._stateMachine.addState(new AttackState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     // add components
