@@ -40,6 +40,7 @@ import { Door } from '../game-objects/objects/door';
 import { Button } from '../game-objects/objects/button';
 import { InventoryManager } from '../components/inventory/inventory-manager';
 import { CHARACTER_STATES } from '../components/state-machine/states/character/character-states';
+import { WeaponComponent } from '../components/game-object/weapon-component';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -121,6 +122,7 @@ export class GameScene extends Phaser.Scene {
       this.#handleButtonPress(switchObj as Button);
     });
 
+    // collision between player and doors that can be unlocked
     this.physics.add.collider(this.#player, this.#lockedDoorGroup, (player, gameObject) => {
       const doorObject = gameObject as Phaser.Types.Physics.Arcade.GameObjectWithBody;
       const door = this.#objectsByRoomId[this.#currentRoomId].doorMap[doorObject.name] as Door;
@@ -135,12 +137,15 @@ export class GameScene extends Phaser.Scene {
           InventoryManager.instance.useAreaSmallKey(this.#levelData.level);
           door.open();
         }
+        // TODO: update data manager so we can persist door state
         return;
       }
 
+      // handle boss door
       if (!areaInventory.bossKey) {
         return;
       }
+      // TODO: update data manager so we can persist door state
       door.open();
     });
 
@@ -156,11 +161,8 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.#objectsByRoomId[roomId].enemyGroup, this.#enemyCollisionLayer);
 
         // register collisions between player and enemies
-        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, (player, enemy) => {
+        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, () => {
           this.#player.hit(DIRECTION.DOWN, 1);
-          // TODO: remove once we can attack enemies
-          const enemyGameObject = enemy as CharacterGameObject;
-          enemyGameObject.hit(this.#player.direction, 1);
         });
 
         // register collisions between enemies and blocking game objects (doors, pots, chests, etc.)
@@ -194,8 +196,35 @@ export class GameScene extends Phaser.Scene {
             return true;
           },
         );
-        // TODO: collide with player weapon
-        // TODO: have enemy weapons collide with player
+
+        // register collisions between player weapon and enemies
+        this.physics.add.overlap(
+          this.#objectsByRoomId[roomId].enemyGroup,
+          this.#player.weaponComponent.body,
+          (enemy) => {
+            (enemy as CharacterGameObject).hit(this.#player.direction, this.#player.weaponComponent.weaponDamage);
+          },
+        );
+
+        // register collisions between enemy weapon and player
+        const enemyWeapons = this.#objectsByRoomId[roomId].enemyGroup.getChildren().flatMap((enemy) => {
+          const weaponComponent = WeaponComponent.getComponent<WeaponComponent>(enemy as GameObject);
+          if (weaponComponent !== undefined) {
+            return [weaponComponent.body];
+          }
+          return [];
+        });
+        if (enemyWeapons.length > 0) {
+          this.physics.add.overlap(enemyWeapons, this.#player, (enemyWeaponBody) => {
+            // get associated weapon component so we can do things like hide projectiles and disable collisions
+            const weaponComponent = WeaponComponent.getComponent<WeaponComponent>(enemyWeaponBody as GameObject);
+            if (weaponComponent === undefined || weaponComponent.weapon === undefined) {
+              return;
+            }
+            weaponComponent.weapon.onCollisionCallback();
+            this.#player.hit(DIRECTION.DOWN, weaponComponent.weaponDamage);
+          });
+        }
       }
 
       // handle collisions between thrown pots and other objects in the current room
