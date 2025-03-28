@@ -19,7 +19,7 @@ import {
   isLevelName,
 } from '../common/utils';
 import { TiledRoomObject } from '../common/tiled/types';
-import { TILED_LAYER_NAMES, TILED_TILESET_NAMES } from '../common/tiled/common';
+import { DOOR_TYPE, TILED_LAYER_NAMES, TILED_TILESET_NAMES } from '../common/tiled/common';
 import {
   getAllLayerNamesWithPrefix,
   getTiledChestObjectsFromMap,
@@ -30,6 +30,7 @@ import {
   getTiledSwitchObjectsFromMap,
 } from '../common/tiled/tiled-utils';
 import { Door } from '../game-objects/objects/door';
+import { Button } from '../game-objects/objects/button';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -52,6 +53,8 @@ export class GameScene extends Phaser.Scene {
   #enemyCollisionLayer!: Phaser.Tilemaps.TilemapLayer;
   #doorTransitionGroup!: Phaser.GameObjects.Group;
   #currentRoomId!: number;
+  #lockedDoorGroup!: Phaser.GameObjects.Group;
+  #switchGroup!: Phaser.GameObjects.Group;
 
   constructor() {
     super({
@@ -93,6 +96,11 @@ export class GameScene extends Phaser.Scene {
     // collision between player and game objects in the dungeon/room/world
     this.physics.add.overlap(this.#player, this.#doorTransitionGroup, (playerObj, doorObj) => {
       this.#handleRoomTransition(doorObj as Phaser.Types.Physics.Arcade.GameObjectWithBody);
+    });
+
+    // collision between player and switches that can be stepped on
+    this.physics.add.overlap(this.#player, this.#switchGroup, (playerObj, switchObj) => {
+      this.#handleButtonPress(switchObj as Button);
     });
 
     // register collisions between player and blocking game objects (doors, pots, chests, etc.)
@@ -226,6 +234,8 @@ export class GameScene extends Phaser.Scene {
     this.#objectsByRoomId = {};
     this.#doorTransitionGroup = this.add.group([]);
     this.#blockingGroup = this.add.group([]);
+    this.#lockedDoorGroup = this.add.group([]);
+    this.#switchGroup = this.add.group([]);
 
     // create game objects
     this.#createRooms(map, TILED_LAYER_NAMES.ROOMS);
@@ -313,13 +323,25 @@ export class GameScene extends Phaser.Scene {
    * for transitions between the various rooms/caves/buildings/etc.
    */
   #createDoors(map: Phaser.Tilemaps.Tilemap, layerName: string, roomId: number): void {
-    console.log(layerName, roomId);
     const validTiledObjects = getTiledDoorObjectsFromMap(map, layerName);
     validTiledObjects.forEach((tileObject) => {
       const door = new Door(this, tileObject, roomId);
       this.#objectsByRoomId[roomId].doors.push(door);
       this.#objectsByRoomId[roomId].doorMap[tileObject.id] = door;
       this.#doorTransitionGroup.add(door.doorTransitionZone);
+
+      if (door.doorObject === undefined) {
+        return;
+      }
+      // TODO: update door details based on data in data manager
+
+      // if door is a locked door, use different group so we during collision we can unlock door if able
+      if (door.doorType === DOOR_TYPE.LOCK || door.doorType === DOOR_TYPE.BOSS) {
+        this.#lockedDoorGroup.add(door.doorObject);
+        return;
+      }
+
+      this.#blockingGroup.add(door.doorObject);
     });
   }
 
@@ -328,9 +350,12 @@ export class GameScene extends Phaser.Scene {
    * that players can interact with to open doors, reveal chests, etc.
    */
   #createButtons(map: Phaser.Tilemaps.Tilemap, layerName: string, roomId: number): void {
-    console.log(layerName, roomId);
     const validTiledObjects = getTiledSwitchObjectsFromMap(map, layerName);
-    console.log(validTiledObjects);
+    validTiledObjects.forEach((tileObject) => {
+      const button = new Button(this, tileObject);
+      this.#objectsByRoomId[roomId].switches.push(button);
+      this.#switchGroup.add(button);
+    });
   }
 
   /**
@@ -493,5 +518,10 @@ export class GameScene extends Phaser.Scene {
         this.#controls.isMovementLocked = false;
       },
     });
+  }
+
+  #handleButtonPress(button: Button): void {
+    console.log(button);
+    // TODO
   }
 }
