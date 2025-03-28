@@ -1,12 +1,12 @@
 import * as Phaser from 'phaser';
 import { SCENE_KEYS } from './scene-keys';
-import { ASSET_KEYS } from '../common/assets';
+import { ASSET_KEYS, CHEST_REWARD_TO_TEXTURE_FRAME } from '../common/assets';
 import { Player } from '../game-objects/player/player';
 import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { DIRECTION } from '../common/common';
+import { DIRECTION, LEVEL_NAME } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -19,7 +19,14 @@ import {
   isLevelName,
 } from '../common/utils';
 import { TiledRoomObject } from '../common/tiled/types';
-import { DOOR_TYPE, SWITCH_ACTION, TILED_LAYER_NAMES, TILED_TILESET_NAMES, TRAP_TYPE } from '../common/tiled/common';
+import {
+  CHEST_REWARD,
+  DOOR_TYPE,
+  SWITCH_ACTION,
+  TILED_LAYER_NAMES,
+  TILED_TILESET_NAMES,
+  TRAP_TYPE,
+} from '../common/tiled/common';
 import {
   getAllLayerNamesWithPrefix,
   getTiledChestObjectsFromMap,
@@ -31,6 +38,7 @@ import {
 } from '../common/tiled/tiled-utils';
 import { Door } from '../game-objects/objects/door';
 import { Button } from '../game-objects/objects/button';
+import { InventoryManager } from '../components/inventory/inventory-manager';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -55,6 +63,7 @@ export class GameScene extends Phaser.Scene {
   #currentRoomId!: number;
   #lockedDoorGroup!: Phaser.GameObjects.Group;
   #switchGroup!: Phaser.GameObjects.Group;
+  #rewardItem!: Phaser.GameObjects.Image;
 
   constructor() {
     super({
@@ -82,6 +91,7 @@ export class GameScene extends Phaser.Scene {
 
     this.#setupPlayer();
     this.#setupCamera();
+    this.#rewardItem = this.add.image(0, 0, ASSET_KEYS.UI_ICONS, 0).setVisible(false).setOrigin(0, 1);
 
     this.#registerColliders();
     this.#registerCustomEvents();
@@ -193,9 +203,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   #handleOpenChest(chest: Chest): void {
-    console.log('chest opened');
+    // TODO: update data manager so we can persist chest state
 
-    // TODO
+    if (chest.contents !== CHEST_REWARD.NOTHING) {
+      // updated game inventory
+      InventoryManager.instance.addDungeonItem(this.#levelData.level, chest.contents);
+    }
+
+    // show reward from chest
+    this.#rewardItem
+      .setFrame(CHEST_REWARD_TO_TEXTURE_FRAME[chest.contents])
+      .setVisible(true)
+      .setPosition(chest.x, chest.y);
+
+    this.tweens.add({
+      targets: this.#rewardItem,
+      y: this.#rewardItem.y - 16,
+      duration: 500,
+      onComplete: () => {
+        // TODO: show dialog modal with reward
+        this.time.delayedCall(1000, () => {
+          this.#rewardItem.setVisible(false);
+        });
+        console.log(InventoryManager.instance.getAreaInventory(LEVEL_NAME.DUNGEON_1));
+      },
+    });
   }
 
   #createLevel(): void {
