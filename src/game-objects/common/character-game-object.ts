@@ -78,6 +78,9 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
     // general config
     this._isPlayer = isPlayer;
     this._isDefeated = false;
+    if (!this._isPlayer) {
+      this.disableObject();
+    }
   }
 
   get isDefeated(): boolean {
@@ -110,6 +113,10 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
 
   get invulnerableComponent(): InvulnerableComponent {
     return this._invulnerableComponent;
+  }
+
+  get stateMachine(): StateMachine {
+    return this._stateMachine;
   }
 
   public update(): void {

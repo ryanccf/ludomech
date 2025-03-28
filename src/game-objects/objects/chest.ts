@@ -59,7 +59,7 @@ export class Chest extends Phaser.Physics.Arcade.Image implements CustomGameObje
       }
       return;
     }
-
+    // disable physics body and make game objects inactive/not visible
     this.disableObject();
   }
 
