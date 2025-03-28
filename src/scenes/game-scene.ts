@@ -392,9 +392,10 @@ export class GameScene extends Phaser.Scene {
     this.#controls.isMovementLocked = true;
 
     const door = this.#objectsByRoomId[this.#currentRoomId].doorMap[doorTrigger.name] as Door;
-    if (isLevelName(door.targetLevel)) {
+    const modifiedLevelName = door.targetLevel.toUpperCase();
+    if (isLevelName(modifiedLevelName)) {
       const sceneData: LevelData = {
-        level: door.targetLevel,
+        level: modifiedLevelName,
         roomId: door.targetRoomId,
         doorId: door.targetDoorId,
       };
