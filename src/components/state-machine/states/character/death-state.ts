@@ -18,6 +18,7 @@ export class DeathState extends BaseCharacterState {
     // reset game object velocity
     this._resetObjectVelocity();
 
+    // drop held object
     const heldComponent = HeldGameObjectComponent.getComponent<HeldGameObjectComponent>(this._gameObject);
     if (heldComponent !== undefined && heldComponent.object !== undefined) {
       const throwObjectComponent = ThrowableObjectComponent.getComponent<ThrowableObjectComponent>(

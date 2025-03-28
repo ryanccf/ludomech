@@ -6,7 +6,7 @@ import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { DIRECTION, LEVEL_NAME } from '../common/common';
+import { DIRECTION } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -41,6 +41,7 @@ import { Button } from '../game-objects/objects/button';
 import { InventoryManager } from '../components/inventory/inventory-manager';
 import { CHARACTER_STATES } from '../components/state-machine/states/character/character-states';
 import { WeaponComponent } from '../components/game-object/weapon-component';
+import { DataManager } from '../common/data-manager';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -136,8 +137,9 @@ export class GameScene extends Phaser.Scene {
         if (areaInventory.keys > 0) {
           InventoryManager.instance.useAreaSmallKey(this.#levelData.level);
           door.open();
+          // update data manager so we can persist door state
+          DataManager.instance.updateDoorData(this.#currentRoomId, door.id, true);
         }
-        // TODO: update data manager so we can persist door state
         return;
       }
 
@@ -145,7 +147,8 @@ export class GameScene extends Phaser.Scene {
       if (!areaInventory.bossKey) {
         return;
       }
-      // TODO: update data manager so we can persist door state
+      // update data manager so we can persist door state
+      DataManager.instance.updateDoorData(this.#currentRoomId, door.id, true);
       door.open();
     });
 
@@ -249,15 +252,18 @@ export class GameScene extends Phaser.Scene {
   #registerCustomEvents(): void {
     EVENT_BUS.on(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
     EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
       EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
     });
   }
 
   #handleOpenChest(chest: Chest): void {
-    // TODO: update data manager so we can persist chest state
+    // update data manager so we can persist chest state
+    DataManager.instance.updateChestData(this.#currentRoomId, chest.id, true, true);
 
     if (chest.contents !== CHEST_REWARD.NOTHING) {
       // updated game inventory
@@ -279,7 +285,6 @@ export class GameScene extends Phaser.Scene {
         this.time.delayedCall(1000, () => {
           this.#rewardItem.setVisible(false);
         });
-        console.log(InventoryManager.instance.getAreaInventory(LEVEL_NAME.DUNGEON_1));
       },
     });
   }
@@ -422,7 +427,14 @@ export class GameScene extends Phaser.Scene {
       if (door.doorObject === undefined) {
         return;
       }
-      // TODO: update door details based on data in data manager
+
+      // update door details based on data in data manager
+      const existingDoorData =
+        DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name][roomId]?.doors[tileObject.id];
+      if (existingDoorData !== undefined && existingDoorData.unlocked) {
+        door.open();
+        return;
+      }
 
       // if door is a locked door, use different group so we during collision we can unlock door if able
       if (door.doorType === DOOR_TYPE.LOCK || door.doorType === DOOR_TYPE.BOSS) {
@@ -469,6 +481,20 @@ export class GameScene extends Phaser.Scene {
       this.#objectsByRoomId[roomId].chests.push(chest);
       this.#objectsByRoomId[roomId].chestMap[chest.id] = chest;
       this.#blockingGroup.add(chest);
+
+      // update chest details based on data in data manager
+      const existingChestData =
+        DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name][roomId]?.chests[
+          tiledObject.id
+        ];
+      if (existingChestData !== undefined) {
+        if (existingChestData.revealed) {
+          chest.reveal();
+        }
+        if (existingChestData.opened) {
+          chest.open();
+        }
+      }
     });
   }
 
@@ -630,7 +656,13 @@ export class GameScene extends Phaser.Scene {
         // for each chest id in the target list, we need to trigger revealing the chest
         buttonPressedData.targetIds.forEach((id) => {
           this.#objectsByRoomId[this.#currentRoomId].chestMap[id].reveal();
-          // TODO: update data manager so we can persist chest state
+          // update data manager so we can persist chest state
+          const existingChestData =
+            DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name][this.#currentRoomId]
+              ?.chests[id];
+          if (!existingChestData || !existingChestData.revealed) {
+            DataManager.instance.updateChestData(this.#currentRoomId, id, true, false);
+          }
         });
         break;
       case SWITCH_ACTION.REVEAL_KEY:
@@ -665,7 +697,13 @@ export class GameScene extends Phaser.Scene {
     this.#objectsByRoomId[this.#currentRoomId].chests.forEach((chest) => {
       if (chest.revealTrigger === TRAP_TYPE.ENEMIES_DEFEATED) {
         chest.reveal();
-        // TODO: update data manager so we can persist chest state
+        // update data manager so we can persist chest state
+        const existingChestData =
+          DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name][this.#currentRoomId]
+            ?.chests[chest.id];
+        if (!existingChestData || !existingChestData.revealed) {
+          DataManager.instance.updateChestData(this.#currentRoomId, chest.id, true, false);
+        }
       }
     });
     this.#objectsByRoomId[this.#currentRoomId].doors.forEach((door) => {
@@ -699,5 +737,12 @@ export class GameScene extends Phaser.Scene {
     for (const child of this.#objectsByRoomId[roomId].enemyGroup.getChildren()) {
       (child as CharacterGameObject).disableObject();
     }
+  }
+
+  #handlePlayerDefeatedEvent(): void {
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.restart();
+    });
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
   }
 }
