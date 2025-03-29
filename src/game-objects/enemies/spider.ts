@@ -75,6 +75,10 @@ export class Spider extends CharacterGameObject {
     this._stateMachine.addState(new HurtState(this, ENEMY_SPIDER_HURT_PUSH_BACK_SPEED));
     this._stateMachine.addState(new DeathState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+  }
+
+  public enableObject(): void {
+    super.enableObject();
 
     // start simple ai movement pattern
     this.scene.time.addEvent({
@@ -107,6 +111,10 @@ export class Spider extends CharacterGameObject {
   #changeDirection(): void {
     // reset existing enemy input
     this.controls.reset();
+
+    if (!this.active) {
+      return;
+    }
 
     // wait a small period of time and then choose a random direction to move
     this.scene.time.delayedCall(ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_WAIT, () => {

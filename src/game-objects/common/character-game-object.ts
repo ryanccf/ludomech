@@ -9,6 +9,7 @@ import { AnimationComponent, AnimationConfig } from '../../components/game-objec
 import { InvulnerableComponent } from '../../components/game-object/invulnerable-component';
 import { CHARACTER_STATES } from '../../components/state-machine/states/character/character-states';
 import { LifeComponent } from '../../components/game-object/life-component';
+import { DataManager } from '../../common/data-manager';
 
 export type CharacterConfig = {
   scene: Phaser.Scene;
@@ -78,6 +79,9 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
     // general config
     this._isPlayer = isPlayer;
     this._isDefeated = false;
+    if (!this._isPlayer) {
+      this.disableObject();
+    }
   }
 
   get isDefeated(): boolean {
@@ -112,6 +116,10 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
     return this._invulnerableComponent;
   }
 
+  get stateMachine(): StateMachine {
+    return this._stateMachine;
+  }
+
   public update(): void {
     this._stateMachine.update();
   }
@@ -128,6 +136,9 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
 
     // have character take damage and see if the character has died
     this._lifeComponent.takeDamage(damage);
+    if (this._isPlayer) {
+      DataManager.instance.updatePlayerCurrentHealth(this._lifeComponent.life);
+    }
     if (this._lifeComponent.life === 0) {
       this._isDefeated = true;
       this._stateMachine.setState(CHARACTER_STATES.DEATH_STATE, direction);
