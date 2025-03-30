@@ -6,7 +6,7 @@ import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { DIRECTION } from '../common/common';
+import { CHEST_REWARD_TO_DIALOG_MAP, DIRECTION } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -99,6 +99,8 @@ export class GameScene extends Phaser.Scene {
 
     this.#registerColliders();
     this.#registerCustomEvents();
+
+    this.scene.launch(SCENE_KEYS.UI_SCENE);
   }
 
   #registerColliders(): void {
@@ -253,11 +255,13 @@ export class GameScene extends Phaser.Scene {
     EVENT_BUS.on(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
     EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.DIALOG_CLOSED, this.#handleDialogClosed, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
       EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.DIALOG_CLOSED, this.#handleDialogClosed, this);
     });
   }
 
@@ -281,10 +285,8 @@ export class GameScene extends Phaser.Scene {
       y: this.#rewardItem.y - 16,
       duration: 500,
       onComplete: () => {
-        // TODO: show dialog modal with reward
-        this.time.delayedCall(1000, () => {
-          this.#rewardItem.setVisible(false);
-        });
+        EVENT_BUS.emit(CUSTOM_EVENTS.SHOW_DIALOG, CHEST_REWARD_TO_DIALOG_MAP[chest.contents]);
+        this.scene.pause();
       },
     });
   }
@@ -741,8 +743,13 @@ export class GameScene extends Phaser.Scene {
 
   #handlePlayerDefeatedEvent(): void {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.scene.restart();
+      this.scene.start(SCENE_KEYS.GAME_OVER_SCENE);
     });
     this.cameras.main.fadeOut(1000, 0, 0, 0);
+  }
+
+  #handleDialogClosed(): void {
+    this.#rewardItem.setVisible(false);
+    this.scene.resume();
   }
 }
