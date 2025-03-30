@@ -743,7 +743,7 @@ export class GameScene extends Phaser.Scene {
 
   #handlePlayerDefeatedEvent(): void {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.scene.restart();
+      this.scene.start(SCENE_KEYS.GAME_OVER_SCENE);
     });
     this.cameras.main.fadeOut(1000, 0, 0, 0);
   }
