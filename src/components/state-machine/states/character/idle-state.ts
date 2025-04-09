@@ -31,6 +31,10 @@ export class IdleState extends BaseCharacterState {
   public onUpdate(): void {
     const controls = this._gameObject.controls;
 
+    if (controls.isMovementLocked) {
+      return;
+    }
+
     // if attack key was pressed, attack with weapon
     if (controls.isAttackKeyJustDown) {
       this._stateMachine.setState(CHARACTER_STATES.ATTACK_STATE);
