@@ -48,8 +48,8 @@ export class DataManager {
       maxHealth: PLAYER_START_MAX_HEALTH,
       currentArea: {
         name: LEVEL_NAME.DUNGEON_1,
-        startRoomId: 3,
-        startDoorId: 3,
+        startRoomId: 1,
+        startDoorId: 1,
       },
       areaDetails: {
         DUNGEON_1: {

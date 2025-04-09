@@ -42,6 +42,7 @@ import { InventoryManager } from '../components/inventory/inventory-manager';
 import { CHARACTER_STATES } from '../components/state-machine/states/character/character-states';
 import { WeaponComponent } from '../components/game-object/weapon-component';
 import { DataManager } from '../common/data-manager';
+import { Drow } from '../game-objects/enemies/boss/drow';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -525,7 +526,8 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
       if (tiledObject.type === 3) {
-        // TODO: create boss enemy
+        const drow = new Drow({ scene: this, position: { x: tiledObject.x, y: tiledObject.y } });
+        this.#objectsByRoomId[roomId].enemyGroup.add(drow);
         continue;
       }
     }
