@@ -10,6 +10,7 @@ import { InvulnerableComponent } from '../../components/game-object/invulnerable
 import { CHARACTER_STATES } from '../../components/state-machine/states/character/character-states';
 import { LifeComponent } from '../../components/game-object/life-component';
 import { DataManager } from '../../common/data-manager';
+import { WeaponComponent } from '../../components/game-object/weapon-component';
 
 export type CharacterConfig = {
   scene: Phaser.Scene;
@@ -156,6 +157,11 @@ export abstract class CharacterGameObject extends Phaser.Physics.Arcade.Sprite i
     this.active = false;
     if (!this._isPlayer) {
       this.visible = false;
+    }
+
+    const weaponComponent = WeaponComponent.getComponent<WeaponComponent>(this);
+    if (weaponComponent !== undefined && weaponComponent.weapon !== undefined && weaponComponent.weapon.isAttacking) {
+      weaponComponent.weapon.onCollisionCallback();
     }
   }
 

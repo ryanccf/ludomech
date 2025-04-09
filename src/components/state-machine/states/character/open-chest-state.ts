@@ -12,6 +12,9 @@ export class OpenChestState extends BaseCharacterState {
   onEnter(args: unknown[]): void {
     const chest = args[0] as Chest;
 
+    // make character invulnerable so we can collect the item
+    this._gameObject.invulnerableComponent.invulnerable = true;
+
     // reset game object velocity
     this._resetObjectVelocity();
 
@@ -21,6 +24,8 @@ export class OpenChestState extends BaseCharacterState {
       EVENT_BUS.emit(CUSTOM_EVENTS.OPENED_CHEST, chest);
       // after showing message to player, transition to idle state
       EVENT_BUS.once(CUSTOM_EVENTS.DIALOG_CLOSED, () => {
+        // make character vulnerable so we can take damage
+        this._gameObject.invulnerableComponent.invulnerable = false;
         this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
       });
     });

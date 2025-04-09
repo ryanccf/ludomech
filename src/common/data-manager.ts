@@ -119,6 +119,10 @@ export class DataManager {
     this.#data.currentHealth = health;
   }
 
+  public defeatedCurrentAreaBoss(): void {
+    this.#data.areaDetails[this.#data.currentArea.name].bossDefeated = true;
+  }
+
   #populateDefaultRoomData(roomId: number): void {
     if (this.#data.areaDetails[this.#data.currentArea.name][roomId] === undefined) {
       this.#data.areaDetails[this.#data.currentArea.name][roomId] = {

@@ -32,6 +32,7 @@ export class PreloadScene extends Phaser.Scene {
     this.anims.createFromAseprite(ASSET_KEYS.PLAYER);
     this.anims.createFromAseprite(ASSET_KEYS.SPIDER);
     this.anims.createFromAseprite(ASSET_KEYS.WISP);
+    this.anims.createFromAseprite(ASSET_KEYS.DROW);
     this.anims.create({
       key: ASSET_KEYS.ENEMY_DEATH,
       frames: this.anims.generateFrameNumbers(ASSET_KEYS.ENEMY_DEATH),
@@ -46,6 +47,13 @@ export class PreloadScene extends Phaser.Scene {
       repeat: 0,
       delay: 0,
       hideOnComplete: true,
+    });
+    this.anims.create({
+      key: ASSET_KEYS.DAGGER,
+      frames: this.anims.generateFrameNumbers(ASSET_KEYS.DAGGER),
+      frameRate: 16,
+      repeat: -1,
+      delay: 0,
     });
   }
 }
