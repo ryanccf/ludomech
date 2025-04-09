@@ -2285,7 +2285,7 @@
                                          "name":"trapDoorTrigger",
                                          "propertytype":"trapTrigger",
                                          "type":"string",
-                                         "value":"ENEMIES_DEFEATED"
+                                         "value":"BOSS_DEFEATED"
                                         }],
                                  "rotation":0,
                                  "type":"door",

@@ -48,8 +48,8 @@ export class DataManager {
       maxHealth: PLAYER_START_MAX_HEALTH,
       currentArea: {
         name: LEVEL_NAME.DUNGEON_1,
-        startRoomId: 1,
-        startDoorId: 1,
+        startRoomId: 3,
+        startDoorId: 3,
       },
       areaDetails: {
         DUNGEON_1: {
@@ -117,6 +117,10 @@ export class DataManager {
     };
     EVENT_BUS.emit(CUSTOM_EVENTS.PLAYER_HEALTH_UPDATED, dataToPass);
     this.#data.currentHealth = health;
+  }
+
+  public defeatedCurrentAreaBoss(): void {
+    this.#data.areaDetails[this.#data.currentArea.name].bossDefeated = true;
   }
 
   #populateDefaultRoomData(roomId: number): void {

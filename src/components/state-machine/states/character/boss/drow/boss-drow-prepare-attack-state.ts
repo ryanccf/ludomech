@@ -4,6 +4,7 @@ import { CharacterGameObject } from '../../../../../../game-objects/common/chara
 import { GameScene } from '../../../../../../scenes/game-scene';
 import { BaseCharacterState } from '../../base-character-state';
 import { CHARACTER_STATES } from '../../character-states';
+import { ENEMY_BOSS_PREPARE_ATTACK_STATE_FINISHED_DELAY } from '../../../../../../common/config';
 
 export class BossDrowPrepareAttackState extends BaseCharacterState {
   constructor(gameObject: CharacterGameObject) {
@@ -35,6 +36,9 @@ export class BossDrowPrepareAttackState extends BaseCharacterState {
       this._gameObject.setY(targetEnemy.y);
     }
 
-    this._stateMachine.setState(CHARACTER_STATES.ATTACK_STATE);
+    this._gameObject.animationComponent.playAnimation(`IDLE_${this._gameObject.direction}`);
+    this._gameObject.scene.time.delayedCall(ENEMY_BOSS_PREPARE_ATTACK_STATE_FINISHED_DELAY, () => {
+      this._stateMachine.setState(CHARACTER_STATES.ATTACK_STATE);
+    });
   }
 }

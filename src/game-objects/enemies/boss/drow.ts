@@ -5,6 +5,9 @@ import {
   ENEMY_BOSS_DROW_MAX_HEALTH,
   BOSS_HURT_PUSH_BACK_DELAY,
   ENEMY_BOSS_DROW_DEATH_ANIMATION_DURATION,
+  ENEMY_BOSS_START_INITIAL_DELAY,
+  ENEMY_BOSS_ATTACK_DAMAGE,
+  ENEMY_BOSS_ATTACK_SPEED,
 } from '../../../common/config';
 import { Position } from '../../../common/types';
 import { AnimationConfig } from '../../../components/game-object/animation-component';
@@ -20,6 +23,8 @@ import { BossDrowPrepareAttackState } from '../../../components/state-machine/st
 import { BossDrowTeleportState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-teleport-state';
 import { AttackState } from '../../../components/state-machine/states/character/attack-state';
 import { BossDrowIdleState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-idle-state';
+import { Dagger } from '../../weapons/dagger';
+import { CUSTOM_EVENTS, EVENT_BUS } from '../../../common/event-bus';
 
 type DrowConfig = {
   scene: Phaser.Scene;
@@ -62,6 +67,18 @@ export class Drow extends CharacterGameObject {
     });
 
     this.#weaponComponent = new WeaponComponent(this);
+    this.#weaponComponent.weapon = new Dagger(
+      this,
+      this.#weaponComponent,
+      {
+        DOWN: DROW_ANIMATION_KEYS.ATTACK_DOWN,
+        UP: DROW_ANIMATION_KEYS.ATTACK_UP,
+        LEFT: DROW_ANIMATION_KEYS.ATTACK_SIDE,
+        RIGHT: DROW_ANIMATION_KEYS.ATTACK_SIDE,
+      },
+      ENEMY_BOSS_ATTACK_DAMAGE,
+      ENEMY_BOSS_ATTACK_SPEED,
+    );
 
     // add state machine
     this._stateMachine.addState(new BossDrowIdleState(this));
@@ -89,6 +106,7 @@ export class Drow extends CharacterGameObject {
             duration: ENEMY_BOSS_DROW_DEATH_ANIMATION_DURATION,
             onComplete: () => {
               this.visible = false;
+              EVENT_BUS.emit(CUSTOM_EVENTS.BOSS_DEFEATED);
             },
           });
         });
@@ -110,18 +128,17 @@ export class Drow extends CharacterGameObject {
 
   public enableObject(): void {
     super.enableObject();
-    this._stateMachine.setState(CHARACTER_STATES.HIDDEN_STATE);
 
-    // if (this._isDefeated) {
-    //   return;
-    // }
+    if (this._isDefeated) {
+      return;
+    }
 
-    // if (this._stateMachine.currentStateName === undefined) {
-    //   this.visible = false;
-    //   this.scene.time.delayedCall(ENEMY_BOSS_START_INITIAL_DELAY, () => {
-    //     this.visible = true;
-    //     this._stateMachine.setState(CHARACTER_STATES.HIDDEN_STATE);
-    //   });
-    // }
+    if (this._stateMachine.currentStateName === undefined) {
+      this.visible = false;
+      this.scene.time.delayedCall(ENEMY_BOSS_START_INITIAL_DELAY, () => {
+        this.visible = true;
+        this._stateMachine.setState(CHARACTER_STATES.HIDDEN_STATE);
+      });
+    }
   }
 }

@@ -261,12 +261,14 @@ export class GameScene extends Phaser.Scene {
     EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
     EVENT_BUS.on(CUSTOM_EVENTS.DIALOG_CLOSED, this.#handleDialogClosed, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.BOSS_DEFEATED, this.#handleBossDefeated, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
       EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkForAllEnemiesAreDefeated, this);
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
       EVENT_BUS.off(CUSTOM_EVENTS.DIALOG_CLOSED, this.#handleDialogClosed, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.BOSS_DEFEATED, this.#handleBossDefeated, this);
     });
   }
 
@@ -529,7 +531,10 @@ export class GameScene extends Phaser.Scene {
         this.#objectsByRoomId[roomId].enemyGroup.add(wisp);
         continue;
       }
-      if (tiledObject.type === 3) {
+      if (
+        tiledObject.type === 3 &&
+        !DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name].bossDefeated
+      ) {
         const drow = new Drow({ scene: this, position: { x: tiledObject.x, y: tiledObject.y } });
         this.#objectsByRoomId[roomId].enemyGroup.add(drow);
         continue;
@@ -718,6 +723,12 @@ export class GameScene extends Phaser.Scene {
       if (door.trapDoorTrigger === TRAP_TYPE.ENEMIES_DEFEATED) {
         door.open();
       }
+      if (
+        door.trapDoorTrigger === TRAP_TYPE.BOSS_DEFEATED &&
+        DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name].bossDefeated
+      ) {
+        door.open();
+      }
     });
   }
 
@@ -757,5 +768,10 @@ export class GameScene extends Phaser.Scene {
   #handleDialogClosed(): void {
     this.#rewardItem.setVisible(false);
     this.scene.resume();
+  }
+
+  #handleBossDefeated(): void {
+    DataManager.instance.defeatedCurrentAreaBoss();
+    this.#handleAllEnemiesDefeated();
   }
 }
