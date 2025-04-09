@@ -75,6 +75,10 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  get player(): Player {
+    return this.#player;
+  }
+
   public init(data: LevelData): void {
     this.#levelData = data;
     this.#currentRoomId = data.roomId;

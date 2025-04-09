@@ -12,10 +12,14 @@ import { InputComponent } from '../../../components/input/input-component';
 import { CHARACTER_STATES } from '../../../components/state-machine/states/character/character-states';
 import { CharacterGameObject } from '../../common/character-game-object';
 import { WeaponComponent } from '../../../components/game-object/weapon-component';
-import { IdleState } from '../../../components/state-machine/states/character/idle-state';
 import { HurtState } from '../../../components/state-machine/states/character/hurt-state';
 import { DeathState } from '../../../components/state-machine/states/character/death-state';
 import { flash } from '../../../common/juice-utils';
+import { BossDrowHiddenState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-hidden-state';
+import { BossDrowPrepareAttackState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-prepare-attack-state';
+import { BossDrowTeleportState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-teleport-state';
+import { AttackState } from '../../../components/state-machine/states/character/attack-state';
+import { BossDrowIdleState } from '../../../components/state-machine/states/character/boss/drow/boss-drow-idle-state';
 
 type DrowConfig = {
   scene: Phaser.Scene;
@@ -60,8 +64,20 @@ export class Drow extends CharacterGameObject {
     this.#weaponComponent = new WeaponComponent(this);
 
     // add state machine
-    this._stateMachine.addState(new IdleState(this));
-    this._stateMachine.addState(new HurtState(this, BOSS_HURT_PUSH_BACK_DELAY));
+    this._stateMachine.addState(new BossDrowIdleState(this));
+    this._stateMachine.addState(new BossDrowHiddenState(this));
+    this._stateMachine.addState(new BossDrowPrepareAttackState(this));
+    this._stateMachine.addState(
+      new BossDrowTeleportState(this, [
+        new Phaser.Math.Vector2(this.scene.scale.width / 2, 80),
+        new Phaser.Math.Vector2(64, 180),
+        new Phaser.Math.Vector2(192, 180),
+      ]),
+    );
+    this._stateMachine.addState(new AttackState(this));
+    this._stateMachine.addState(
+      new HurtState(this, BOSS_HURT_PUSH_BACK_DELAY, undefined, CHARACTER_STATES.TELEPORT_STATE),
+    );
     this._stateMachine.addState(
       new DeathState(this, () => {
         this.visible = true;
@@ -78,7 +94,6 @@ export class Drow extends CharacterGameObject {
         });
       }),
     );
-    this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     this.setScale(1.25);
     this.physicsBody.setSize(12, 24, true).setOffset(this.displayWidth / 4, this.displayHeight / 4 - 3);
@@ -91,5 +106,22 @@ export class Drow extends CharacterGameObject {
   public update(): void {
     super.update();
     this.#weaponComponent.update();
+  }
+
+  public enableObject(): void {
+    super.enableObject();
+    this._stateMachine.setState(CHARACTER_STATES.HIDDEN_STATE);
+
+    // if (this._isDefeated) {
+    //   return;
+    // }
+
+    // if (this._stateMachine.currentStateName === undefined) {
+    //   this.visible = false;
+    //   this.scene.time.delayedCall(ENEMY_BOSS_START_INITIAL_DELAY, () => {
+    //     this.visible = true;
+    //     this._stateMachine.setState(CHARACTER_STATES.HIDDEN_STATE);
+    //   });
+    // }
   }
 }
