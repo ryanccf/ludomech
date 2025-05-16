@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Monster Tamer Logo](/docs/logo.png?raw=true 'Monster Tamer Logo')
+![Legend of the Wispguard Logo](/docs/logo.png?raw=true 'Legend of the Wispguard Logo')
 
 Legend of the Wispguard - Zelda-like Tutorial with [Phaser 3](https://github.com/photonstorm/phaser)!
 
