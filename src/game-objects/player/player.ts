@@ -26,6 +26,8 @@ import { ThrowState } from '../../components/state-machine/states/character/thro
 import { AttackState } from '../../components/state-machine/states/character/attack-state';
 import { WeaponComponent } from '../../components/game-object/weapon-component';
 import { Sword } from '../weapons/sword';
+import { WallDetectionComponent } from '../../components/game-object/wall-detection-component';
+import { ClingState } from '../../components/state-machine/states/character/cling-state';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -103,11 +105,13 @@ export class Player extends CharacterGameObject {
     this._stateMachine.addState(new MoveHoldingState(this));
     this._stateMachine.addState(new ThrowState(this));
     this._stateMachine.addState(new AttackState(this));
+    this._stateMachine.addState(new ClingState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     // add components
     this.#collidingObjectsComponent = new CollidingObjectsComponent(this);
     new HeldGameObjectComponent(this);
+    new WallDetectionComponent(this);
     this.#weaponComponent = new WeaponComponent(this);
     this.#weaponComponent.weapon = new Sword(
       this,

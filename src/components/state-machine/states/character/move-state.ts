@@ -6,8 +6,13 @@ import { CollidingObjectsComponent } from '../../../game-object/colliding-object
 import { InteractiveObjectComponent } from '../../../game-object/interactive-object-component';
 import { InputComponent } from '../../../input/input-component';
 import { BaseMoveState } from './base-move-state';
+import { WallDetectionComponent } from '../../../game-object/wall-detection-component';
 
 export class MoveState extends BaseMoveState {
+  #clingTimer: number = 0;
+  #clingThreshold: number = 500; // 0.5 seconds in milliseconds
+  #lastWallDirection: string | undefined;
+
   constructor(gameObject: CharacterGameObject) {
     super(CHARACTER_STATES.MOVE_STATE, gameObject, 'WALK');
   }
@@ -32,8 +37,54 @@ export class MoveState extends BaseMoveState {
       return;
     }
 
+    // Check if running into a wall - enter cling mode after threshold
+    if (this.#checkForCling()) {
+      return;
+    }
+
     // handle character movement
     this.handleCharacterMovement();
+  }
+
+  public onExit(): void {
+    // Reset cling timer when leaving move state
+    this.#clingTimer = 0;
+    this.#lastWallDirection = undefined;
+  }
+
+  #checkForCling(): boolean {
+    const wallDetectionComponent = WallDetectionComponent.getComponent<WallDetectionComponent>(this._gameObject);
+    if (!wallDetectionComponent) {
+      return false;
+    }
+
+    const wallDirection = wallDetectionComponent.getWallDirection();
+
+    if (wallDirection) {
+      // Player is pressing against a wall
+      if (this.#lastWallDirection === wallDirection) {
+        // Same wall direction - increment timer
+        this.#clingTimer += this._gameObject.scene.game.loop.delta;
+
+        if (this.#clingTimer >= this.#clingThreshold) {
+          // Timer threshold reached - enter cling state
+          this._stateMachine.setState(CHARACTER_STATES.CLING_STATE, wallDirection);
+          this.#clingTimer = 0;
+          this.#lastWallDirection = undefined;
+          return true;
+        }
+      } else {
+        // Different wall direction - reset timer
+        this.#clingTimer = 0;
+        this.#lastWallDirection = wallDirection;
+      }
+    } else {
+      // Not pressing against a wall - reset timer
+      this.#clingTimer = 0;
+      this.#lastWallDirection = undefined;
+    }
+
+    return false;
   }
 
   #checkIfObjectWasInteractedWith(controls: InputComponent): boolean {
