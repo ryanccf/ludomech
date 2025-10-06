@@ -10,6 +10,7 @@ export class UiScene extends Phaser.Scene {
   #hearts!: Phaser.GameObjects.Sprite[];
   #dialogContainer!: Phaser.GameObjects.Container;
   #dialogContainerText!: Phaser.GameObjects.Text;
+  #actionText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({
@@ -50,14 +51,25 @@ export class UiScene extends Phaser.Scene {
     this.#dialogContainer.add(this.#dialogContainerText);
     this.#dialogContainer.visible = false;
 
+    // create action text (shows available action) at top of screen
+    this.#actionText = this.add.text(8, 8, 'Action: ', DEFAULT_UI_TEXT_STYLE).setOrigin(0);
+
     // register event listeners
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_HEALTH_UPDATED, this.updateHealthInHud, this);
     EVENT_BUS.on(CUSTOM_EVENTS.SHOW_DIALOG, this.showDialog, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_ACTION_CHANGED, this.updateActionText, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_HEALTH_UPDATED, this.updateHealthInHud, this);
       EVENT_BUS.off(CUSTOM_EVENTS.SHOW_DIALOG, this.showDialog, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_ACTION_CHANGED, this.updateActionText, this);
     });
+  }
+
+  public updateActionText(action: string): void {
+    // Update action text based on what's available
+    // Can be: Grab, Open, Crawl, Stand, or blank
+    this.#actionText.setText(`Action: ${action}`);
   }
 
   public async updateHealthInHud(data: PlayerHealthUpdated): Promise<void> {

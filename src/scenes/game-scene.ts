@@ -171,7 +171,11 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.#objectsByRoomId[roomId].enemyGroup, this.#enemyCollisionLayer);
 
         // register collisions between player and enemies
-        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, () => {
+        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, (playerObj, enemyObj) => {
+          // Skip damage if player is crawling and enemy is a Wisp
+          if (this.#player.isCrawling && enemyObj instanceof Wisp) {
+            return;
+          }
           this.#player.hit(DIRECTION.DOWN, 1);
         });
 

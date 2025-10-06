@@ -28,6 +28,9 @@ import { WeaponComponent } from '../../components/game-object/weapon-component';
 import { Sword } from '../weapons/sword';
 import { WallDetectionComponent } from '../../components/game-object/wall-detection-component';
 import { ClingState } from '../../components/state-machine/states/character/cling-state';
+import { InteractiveObjectComponent } from '../../components/game-object/interactive-object-component';
+import { INTERACTIVE_OBJECT_TYPE } from '../../common/common';
+import { CUSTOM_EVENTS, EVENT_BUS } from '../../common/event-bus';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -40,6 +43,8 @@ export type PlayerConfig = {
 export class Player extends CharacterGameObject {
   #collidingObjectsComponent: CollidingObjectsComponent;
   #weaponComponent: WeaponComponent;
+  #isCrawling: boolean;
+  #currentAction: string;
 
   constructor(config: PlayerConfig) {
     // create animation config for component
@@ -115,6 +120,8 @@ export class Player extends CharacterGameObject {
     new HeldGameObjectComponent(this);
     new WallDetectionComponent(this);
     this.#weaponComponent = new WeaponComponent(this);
+    this.#isCrawling = false;
+    this.#currentAction = '';
     this.#weaponComponent.weapon = new Sword(
       this,
       this.#weaponComponent,
@@ -149,13 +156,62 @@ export class Player extends CharacterGameObject {
     return this.#weaponComponent;
   }
 
+  get isCrawling(): boolean {
+    return this.#isCrawling;
+  }
+
+  set isCrawling(value: boolean) {
+    this.#isCrawling = value;
+  }
+
   public collidedWithGameObject(gameObject: GameObject): void {
     this.#collidingObjectsComponent.add(gameObject);
+  }
+
+  #getAvailableAction(): string {
+    // Check for interactive objects first (highest priority)
+    if (this.#collidingObjectsComponent.objects.length > 0) {
+      const collisionObject = this.#collidingObjectsComponent.objects[0];
+      const interactiveObjectComponent =
+        InteractiveObjectComponent.getComponent<InteractiveObjectComponent>(collisionObject);
+
+      if (interactiveObjectComponent !== undefined && interactiveObjectComponent.canInteractWith()) {
+        // OPEN: Can open chests even while crawling
+        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
+          return 'Open';
+        }
+
+        // GRAB: Can only grab pots when NOT crawling
+        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP && !this.#isCrawling) {
+          return 'Grab';
+        }
+      }
+    }
+
+    // Crawl/Stand toggle only available when idle
+    const currentState = this._stateMachine.currentStateName;
+    if (currentState === CHARACTER_STATES.IDLE_STATE) {
+      if (this.#isCrawling) {
+        return 'Stand';
+      } else {
+        return 'Crawl';
+      }
+    }
+
+    // When not idle and no interactive object available, show blank
+    return '';
   }
 
   public update(): void {
     super.update();
     this.#collidingObjectsComponent.reset();
     this.#weaponComponent.update();
+
+    // Check if available action has changed and emit event
+    const newAction = this.#getAvailableAction();
+    if (newAction !== this.#currentAction) {
+      this.#currentAction = newAction;
+      EVENT_BUS.emit(CUSTOM_EVENTS.PLAYER_ACTION_CHANGED, newAction);
+    }
   }
 }
