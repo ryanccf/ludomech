@@ -52,6 +52,8 @@ export class Player extends CharacterGameObject {
       IDLE_UP: { key: PLAYER_ANIMATION_KEYS.IDLE_UP, repeat: -1, ignoreIfPlaying: true },
       IDLE_LEFT: { key: PLAYER_ANIMATION_KEYS.IDLE_SIDE, repeat: -1, ignoreIfPlaying: true },
       IDLE_RIGHT: { key: PLAYER_ANIMATION_KEYS.IDLE_SIDE, repeat: -1, ignoreIfPlaying: true },
+      WALL_HUG_LEFT: { key: PLAYER_ANIMATION_KEYS.WALL_HUG_LEFT, repeat: -1, ignoreIfPlaying: true },
+      WALL_HUG_RIGHT: { key: PLAYER_ANIMATION_KEYS.WALL_HUG_RIGHT, repeat: -1, ignoreIfPlaying: true },
       HURT_DOWN: { key: PLAYER_ANIMATION_KEYS.HURT_DOWN, repeat: 0, ignoreIfPlaying: true },
       HURT_UP: { key: PLAYER_ANIMATION_KEYS.HURT_UP, repeat: 0, ignoreIfPlaying: true },
       HURT_LEFT: { key: PLAYER_ANIMATION_KEYS.HURT_SIDE, repeat: 0, ignoreIfPlaying: true },

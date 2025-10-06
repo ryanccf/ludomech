@@ -68,6 +68,7 @@ export class MoveState extends BaseMoveState {
 
         if (this.#clingTimer >= this.#clingThreshold) {
           // Timer threshold reached - enter cling state
+          console.log('[MoveState] Triggering cling state with wallDirection:', wallDirection, 'type:', typeof wallDirection);
           this._stateMachine.setState(CHARACTER_STATES.CLING_STATE, wallDirection);
           this.#clingTimer = 0;
           this.#lastWallDirection = undefined;

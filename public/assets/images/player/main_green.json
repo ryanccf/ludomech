@@ -2687,6 +2687,8 @@
    { "name": "player_SIDE", "from": 114, "to": 218, "direction": "forward", "color": "#6acd5bff" },
    { "name": "player_stop_side", "from": 114, "to": 114, "direction": "forward", "color": "#000000ff" },
    { "name": "player_idle_side", "from": 115, "to": 118, "direction": "forward", "color": "#000000ff" },
+   { "name": "player_wall_hug_left", "from": 114, "to": 114, "direction": "forward", "color": "#000000ff" },
+   { "name": "player_wall_hug_right", "from": 114, "to": 114, "direction": "forward", "color": "#000000ff" },
    { "name": "player_interaction_side", "from": 119, "to": 122, "direction": "forward", "color": "#000000ff" },
    { "name": "player_walk_side", "from": 123, "to": 130, "direction": "forward", "color": "#000000ff" },
    { "name": "player_open_chest_side", "from": 131, "to": 134, "direction": "forward", "color": "#000000ff" },

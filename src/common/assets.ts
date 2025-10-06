@@ -4,6 +4,7 @@ export const ASSET_PACK_KEYS = {
 
 export const ASSET_KEYS = {
   PLAYER: 'PLAYER',
+  PLAYER_FLIPPED: 'PLAYER_FLIPPED',
   POT: 'POT',
   POT_BREAK: 'POT_BREAK',
   SPIDER: 'SPIDER',
@@ -33,6 +34,8 @@ export const PLAYER_ANIMATION_KEYS = {
   IDLE_DOWN: 'player_idle_down',
   IDLE_UP: 'player_idle_up',
   IDLE_SIDE: 'player_idle_side',
+  WALL_HUG_LEFT: 'player_wall_hug_left',
+  WALL_HUG_RIGHT: 'player_wall_hug_right',
   IDLE_HOLD_DOWN: 'player_hand_in_air_down',
   IDLE_HOLD_UP: 'player_hand_in_air_up',
   IDLE_HOLD_SIDE: 'player_hand_in_air_side',
@@ -82,6 +85,8 @@ export const CHARACTER_ANIMATIONS = {
   IDLE_UP: 'IDLE_UP',
   IDLE_LEFT: 'IDLE_LEFT',
   IDLE_RIGHT: 'IDLE_RIGHT',
+  WALL_HUG_LEFT: 'WALL_HUG_LEFT',
+  WALL_HUG_RIGHT: 'WALL_HUG_RIGHT',
   WALK_DOWN: 'WALK_DOWN',
   WALK_UP: 'WALK_UP',
   WALK_LEFT: 'WALK_LEFT',

@@ -52,6 +52,12 @@
         "atlasURL": "main_green.json"
       },
       {
+        "type": "aseprite",
+        "key": "PLAYER_FLIPPED",
+        "textureURL": "main_green_flipped.png",
+        "atlasURL": "main_green.json"
+      },
+      {
         "type": "spritesheet",
         "key": "DAGGER",
         "url": "dagger.png",
