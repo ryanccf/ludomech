@@ -121,20 +121,21 @@ export class MoveState extends BaseMoveState {
       return false;
     }
 
+    // Call interact() for all interactive objects (this is important for callbacks)
+    interactiveObjectComponent.interact();
+
     // we can carry this item - but NOT while crawling
     if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP) {
       if (this._gameObject instanceof Player && this._gameObject.isCrawling) {
-        // Can't pick up pots while crawling
+        // Can't pick up pots while crawling - interaction already called, but don't change state
         return false;
       }
-      interactiveObjectComponent.interact();
       this._stateMachine.setState(CHARACTER_STATES.LIFT_STATE, collisionObject);
       return true;
     }
 
     // we can open this item - even while crawling
     if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
-      interactiveObjectComponent.interact();
       this._stateMachine.setState(CHARACTER_STATES.OPEN_CHEST_STATE, collisionObject);
       return true;
     }

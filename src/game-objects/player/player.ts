@@ -45,6 +45,7 @@ export class Player extends CharacterGameObject {
   #weaponComponent: WeaponComponent;
   #isCrawling: boolean;
   #currentAction: string;
+  #interactionSensor: Phaser.GameObjects.Zone;
 
   constructor(config: PlayerConfig) {
     // create animation config for component
@@ -146,6 +147,19 @@ export class Player extends CharacterGameObject {
 
     // update physics body
     this.physicsBody.setSize(12, 16, true).setOffset(this.width / 2 - 5, this.height / 2);
+
+    // Create a larger interaction sensor area that doesn't affect physics
+    // This allows detecting nearby interactive objects without pressing toward them
+    this.#interactionSensor = config.scene.add.zone(this.x, this.y, 32, 32);
+    config.scene.physics.add.existing(this.#interactionSensor);
+    const sensorBody = this.#interactionSensor.body as Phaser.Physics.Arcade.Body;
+    sensorBody.setAllowGravity(false);
+    // Make it a sensor - it detects overlaps but doesn't cause physics collisions
+    sensorBody.pushable = false;
+  }
+
+  get interactionSensor(): Phaser.GameObjects.Zone {
+    return this.#interactionSensor;
   }
 
   get physicsBody(): Phaser.Physics.Arcade.Body {
@@ -169,49 +183,75 @@ export class Player extends CharacterGameObject {
   }
 
   #getAvailableAction(): string {
+    console.log('[Player] Checking available action. Colliding objects:', this.#collidingObjectsComponent.objects.length);
+
     // Check for interactive objects first (highest priority)
     if (this.#collidingObjectsComponent.objects.length > 0) {
       const collisionObject = this.#collidingObjectsComponent.objects[0];
+      console.log('[Player] Collision object:', collisionObject);
+
       const interactiveObjectComponent =
         InteractiveObjectComponent.getComponent<InteractiveObjectComponent>(collisionObject);
+      console.log('[Player] Interactive component:', interactiveObjectComponent, 'canInteract:', interactiveObjectComponent?.canInteractWith());
 
       if (interactiveObjectComponent !== undefined && interactiveObjectComponent.canInteractWith()) {
+        console.log('[Player] Object type:', interactiveObjectComponent.objectType);
+
         // OPEN: Can open chests even while crawling
         if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
+          console.log('[Player] Returning Open');
           return 'Open';
         }
 
         // GRAB: Can only grab pots when NOT crawling
-        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP && !this.#isCrawling) {
-          return 'Grab';
+        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP) {
+          console.log('[Player] PICKUP type detected, crawling:', this.#isCrawling);
+          if (!this.#isCrawling) {
+            console.log('[Player] Returning Grab');
+            return 'Grab';
+          }
+          // If crawling near a pot, show blank (can't grab)
+          console.log('[Player] Crawling, returning blank for pot');
+          return '';
         }
       }
     }
 
     // Crawl/Stand toggle only available when idle
     const currentState = this._stateMachine.currentStateName;
+    console.log('[Player] No interactive object, state:', currentState);
     if (currentState === CHARACTER_STATES.IDLE_STATE) {
       if (this.#isCrawling) {
+        console.log('[Player] Returning Stand');
         return 'Stand';
       } else {
+        console.log('[Player] Returning Crawl');
         return 'Crawl';
       }
     }
 
     // When not idle and no interactive object available, show blank
+    console.log('[Player] Returning blank (not idle, no objects)');
     return '';
   }
 
   public update(): void {
     super.update();
-    this.#collidingObjectsComponent.reset();
+
+    // Update interaction sensor position to follow player
+    this.#interactionSensor.setPosition(this.x, this.y);
+
     this.#weaponComponent.update();
 
     // Check if available action has changed and emit event
     const newAction = this.#getAvailableAction();
     if (newAction !== this.#currentAction) {
+      console.log('[Player] Action changed from', this.#currentAction, 'to', newAction);
       this.#currentAction = newAction;
       EVENT_BUS.emit(CUSTOM_EVENTS.PLAYER_ACTION_CHANGED, newAction);
     }
+
+    // Reset colliding objects AFTER checking available action
+    this.#collidingObjectsComponent.reset();
   }
 }

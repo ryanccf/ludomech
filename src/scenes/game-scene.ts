@@ -120,8 +120,13 @@ export class GameScene extends Phaser.Scene {
     });
 
     // register collisions between player and blocking game objects (doors, pots, chests, etc.)
-    this.physics.add.collider(this.#player, this.#blockingGroup, (player, gameObject) => {
-      // add game object to players collision list
+    // This handles physics blocking (can't walk through objects)
+    this.physics.add.collider(this.#player, this.#blockingGroup);
+
+    // Use the player's interaction sensor (larger zone) for detecting nearby interactive objects
+    // This allows interaction detection even when standing still next to objects
+    this.physics.add.overlap(this.#player.interactionSensor, this.#blockingGroup, (sensor, gameObject) => {
+      // add game object to players collision list for interaction
       this.#player.collidedWithGameObject(gameObject as GameObject);
     });
 
