@@ -223,5 +223,9 @@ export class MoveState extends BaseMoveState {
     }
 
     this._gameObject.setTexture(textureKey);
+
+    // Ensure physics body offset stays consistent after texture change
+    const playerBody = this._gameObject.body as Phaser.Physics.Arcade.Body;
+    playerBody.setSize(12, 16, true).setOffset(this._gameObject.width / 2 - 5, this._gameObject.height / 2);
   }
 }

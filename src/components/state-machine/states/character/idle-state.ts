@@ -69,6 +69,9 @@ export class IdleState extends BaseCharacterState {
           this._gameObject.setTexture(ASSET_KEYS.PLAYER);
           this._gameObject.animationComponent.playAnimation(`IDLE_${this._gameObject.direction}`);
         }
+        // Ensure physics body offset stays consistent after texture change
+        const playerBody = this._gameObject.body as Phaser.Physics.Arcade.Body;
+        playerBody.setSize(12, 16, true).setOffset(this._gameObject.width / 2 - 5, this._gameObject.height / 2);
         // Action text will be updated by Player.update() via PLAYER_ACTION_CHANGED event
         return;
       }
@@ -108,6 +111,10 @@ export class IdleState extends BaseCharacterState {
     }
 
     this._gameObject.setTexture(textureKey);
+
+    // Ensure physics body offset stays consistent after texture change
+    const playerBody = this._gameObject.body as Phaser.Physics.Arcade.Body;
+    playerBody.setSize(12, 16, true).setOffset(this._gameObject.width / 2 - 5, this._gameObject.height / 2);
   }
 
   #checkIfObjectWasInteractedWith(): boolean {

@@ -43,6 +43,7 @@ import { CHARACTER_STATES } from '../components/state-machine/states/character/c
 import { WeaponComponent } from '../components/game-object/weapon-component';
 import { DataManager } from '../common/data-manager';
 import { Drow } from '../game-objects/enemies/boss/drow';
+import { DebugManager } from '../common/debug-manager';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -68,6 +69,7 @@ export class GameScene extends Phaser.Scene {
   #lockedDoorGroup!: Phaser.GameObjects.Group;
   #switchGroup!: Phaser.GameObjects.Group;
   #rewardItem!: Phaser.GameObjects.Image;
+  #debugGraphics!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({
@@ -91,6 +93,13 @@ export class GameScene extends Phaser.Scene {
     }
     this.#controls = new KeyboardComponent(this.input.keyboard);
 
+    // Setup pause menu handling
+    this.input.keyboard.on('keydown-ENTER', () => {
+      if (this.#controls.isEnterKeyJustDown) {
+        this.#pauseGame();
+      }
+    });
+
     this.#createLevel();
     if (this.#collisionLayer === undefined || this.#enemyCollisionLayer === undefined) {
       console.warn('Missing required collision layers for game.');
@@ -104,6 +113,10 @@ export class GameScene extends Phaser.Scene {
 
     this.#registerColliders();
     this.#registerCustomEvents();
+
+    // Create debug graphics for visualization
+    this.#debugGraphics = this.add.graphics();
+    this.#debugGraphics.setDepth(1000); // Render on top
 
     this.scene.launch(SCENE_KEYS.UI_SCENE);
   }
@@ -263,6 +276,14 @@ export class GameScene extends Phaser.Scene {
         });
       }
     });
+  }
+
+  #pauseGame(): void {
+    // Pause game and UI scenes
+    this.scene.pause();
+    this.scene.pause(SCENE_KEYS.UI_SCENE);
+    // Launch pause menu
+    this.scene.launch(SCENE_KEYS.PAUSE_MENU_SCENE);
   }
 
   #registerCustomEvents(): void {
@@ -782,5 +803,80 @@ export class GameScene extends Phaser.Scene {
   #handleBossDefeated(): void {
     DataManager.instance.defeatedCurrentAreaBoss();
     this.#handleAllEnemiesDefeated();
+  }
+
+  public update(): void {
+    this.#renderDebugGraphics();
+  }
+
+  #renderDebugGraphics(): void {
+    const debugSettings = DebugManager.instance.settings;
+    this.#debugGraphics.clear();
+
+    // Player collision box (12x16)
+    if (debugSettings.showPlayerCollision) {
+      this.#debugGraphics.lineStyle(2, 0x00ff00, 1);
+      const playerBody = this.#player.body as Phaser.Physics.Arcade.Body;
+      this.#debugGraphics.strokeRect(
+        playerBody.x,
+        playerBody.y,
+        playerBody.width,
+        playerBody.height
+      );
+    }
+
+    // Player interaction sensor (32x32)
+    if (debugSettings.showPlayerInteraction) {
+      this.#debugGraphics.lineStyle(2, 0x00ffff, 0.6);
+      const sensorBody = this.#player.interactionSensor.body as Phaser.Physics.Arcade.Body;
+      this.#debugGraphics.strokeRect(
+        sensorBody.x,
+        sensorBody.y,
+        sensorBody.width,
+        sensorBody.height
+      );
+    }
+
+    // Interactable objects collision (blocking group)
+    if (debugSettings.showInteractableCollision) {
+      this.#debugGraphics.lineStyle(2, 0xffff00, 0.8);
+      this.#blockingGroup.getChildren().forEach((obj) => {
+        const gameObject = obj as GameObject;
+        if (gameObject.body && isArcadePhysicsBody(gameObject.body)) {
+          this.#debugGraphics.strokeRect(
+            gameObject.body.x,
+            gameObject.body.y,
+            gameObject.body.width,
+            gameObject.body.height
+          );
+        }
+      });
+    }
+
+    // Enemy collision
+    if (debugSettings.showEnemyCollision) {
+      this.#debugGraphics.lineStyle(2, 0xff0000, 0.8);
+      const currentRoomEnemies = this.#objectsByRoomId[this.#currentRoomId]?.enemyGroup;
+      if (currentRoomEnemies) {
+        currentRoomEnemies.getChildren().forEach((enemy) => {
+          const enemyObj = enemy as GameObject;
+          if (enemyObj.body && isArcadePhysicsBody(enemyObj.body)) {
+            this.#debugGraphics.strokeRect(
+              enemyObj.body.x,
+              enemyObj.body.y,
+              enemyObj.body.width,
+              enemyObj.body.height
+            );
+          }
+        });
+      }
+    }
+
+    // Walls (collision layer)
+    if (debugSettings.showWalls) {
+      this.#collisionLayer.setAlpha(1);
+    } else {
+      this.#collisionLayer.setAlpha(CONFIG.DEBUG_COLLISION_ALPHA);
+    }
   }
 }

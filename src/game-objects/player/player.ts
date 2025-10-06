@@ -150,7 +150,9 @@ export class Player extends CharacterGameObject {
 
     // Create a larger interaction sensor area that doesn't affect physics
     // This allows detecting nearby interactive objects without pressing toward them
-    this.#interactionSensor = config.scene.add.zone(this.x, this.y, 32, 32);
+    // Sensor is 32x36 (10 pixels padding on all sides around 12x16 collision box)
+    // Position is set in update() to follow collision body center
+    this.#interactionSensor = config.scene.add.zone(this.x, this.y, 32, 36);
     config.scene.physics.add.existing(this.#interactionSensor);
     const sensorBody = this.#interactionSensor.body as Phaser.Physics.Arcade.Body;
     sensorBody.setAllowGravity(false);
@@ -238,8 +240,9 @@ export class Player extends CharacterGameObject {
   public update(): void {
     super.update();
 
-    // Update interaction sensor position to follow player
-    this.#interactionSensor.setPosition(this.x, this.y);
+    // Update interaction sensor position to follow collision body center
+    const playerBody = this.body as Phaser.Physics.Arcade.Body;
+    this.#interactionSensor.setPosition(playerBody.center.x, playerBody.center.y);
 
     this.#weaponComponent.update();
 
