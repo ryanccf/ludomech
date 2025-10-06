@@ -1,12 +1,14 @@
 import { INTERACTIVE_OBJECT_TYPE } from '../../../../common/common';
 import { CHARACTER_STATES } from './character-states';
-import { exhaustiveGuard } from '../../../../common/utils';
+import { exhaustiveGuard, isArcadePhysicsBody } from '../../../../common/utils';
 import { CharacterGameObject } from '../../../../game-objects/common/character-game-object';
 import { CollidingObjectsComponent } from '../../../game-object/colliding-objects-component';
 import { InteractiveObjectComponent } from '../../../game-object/interactive-object-component';
 import { InputComponent } from '../../../input/input-component';
 import { BaseMoveState } from './base-move-state';
 import { WallDetectionComponent } from '../../../game-object/wall-detection-component';
+import { Player } from '../../../../game-objects/player/player';
+import { ASSET_KEYS } from '../../../../common/assets';
 
 export class MoveState extends BaseMoveState {
   #clingTimer: number = 0;
@@ -42,8 +44,12 @@ export class MoveState extends BaseMoveState {
       return;
     }
 
-    // handle character movement
-    this.handleCharacterMovement();
+    // handle character movement (crawl or walk)
+    if (this._gameObject instanceof Player && this._gameObject.isCrawling) {
+      this.#handleCrawlMovement();
+    } else {
+      this.handleCharacterMovement();
+    }
   }
 
   public onExit(): void {
@@ -53,6 +59,11 @@ export class MoveState extends BaseMoveState {
   }
 
   #checkForCling(): boolean {
+    // Don't allow wall-hugging while crawling
+    if (this._gameObject instanceof Player && this._gameObject.isCrawling) {
+      return false;
+    }
+
     const wallDetectionComponent = WallDetectionComponent.getComponent<WallDetectionComponent>(this._gameObject);
     if (!wallDetectionComponent) {
       return false;
@@ -68,6 +79,7 @@ export class MoveState extends BaseMoveState {
 
         if (this.#clingTimer >= this.#clingThreshold) {
           // Timer threshold reached - enter cling state
+          console.log('[MoveState] Triggering cling state with wallDirection:', wallDirection, 'type:', typeof wallDirection);
           this._stateMachine.setState(CHARACTER_STATES.CLING_STATE, wallDirection);
           this.#clingTimer = 0;
           this.#lastWallDirection = undefined;
@@ -108,15 +120,21 @@ export class MoveState extends BaseMoveState {
     if (!interactiveObjectComponent.canInteractWith()) {
       return false;
     }
+
+    // Call interact() for all interactive objects (this is important for callbacks)
     interactiveObjectComponent.interact();
 
-    // we can carry this item
+    // we can carry this item - but NOT while crawling
     if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP) {
+      if (this._gameObject instanceof Player && this._gameObject.isCrawling) {
+        // Can't pick up pots while crawling - interaction already called, but don't change state
+        return false;
+      }
       this._stateMachine.setState(CHARACTER_STATES.LIFT_STATE, collisionObject);
       return true;
     }
 
-    // we can open this item
+    // we can open this item - even while crawling
     if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
       this._stateMachine.setState(CHARACTER_STATES.OPEN_CHEST_STATE, collisionObject);
       return true;
@@ -128,5 +146,86 @@ export class MoveState extends BaseMoveState {
 
     // we should never hit this code block
     exhaustiveGuard(interactiveObjectComponent.objectType);
+  }
+
+  #handleCrawlMovement(): void {
+    if (!isArcadePhysicsBody(this._gameObject.body)) {
+      return;
+    }
+
+    // Stop any playing animation to use static crawl textures
+    this._gameObject.anims.stop();
+
+    const controls = this._gameObject.controls;
+    const crawlSpeed = this._gameObject.speed * 0.5; // 50% of normal speed
+
+    // Determine 8-directional movement
+    let velocityX = 0;
+    let velocityY = 0;
+
+    if (controls.isUpDown) {
+      velocityY = -1;
+    } else if (controls.isDownDown) {
+      velocityY = 1;
+    }
+
+    if (controls.isLeftDown) {
+      velocityX = -1;
+    } else if (controls.isRightDown) {
+      velocityX = 1;
+    }
+
+    // Set velocity
+    this._gameObject.body.velocity.x = velocityX;
+    this._gameObject.body.velocity.y = velocityY;
+
+    // Normalize and scale for crawl speed
+    this._gameObject.body.velocity.normalize().scale(crawlSpeed);
+
+    // Determine which crawl texture to use based on 8 directions
+    let textureKey: string;
+
+    if (velocityY < 0 && velocityX === 0) {
+      // North
+      textureKey = ASSET_KEYS.CRAWL_N;
+      this._gameObject.direction = 'UP';
+    } else if (velocityY < 0 && velocityX > 0) {
+      // Northeast
+      textureKey = ASSET_KEYS.CRAWL_NE;
+      this._gameObject.direction = 'UP';
+    } else if (velocityY === 0 && velocityX > 0) {
+      // East
+      textureKey = ASSET_KEYS.CRAWL_E;
+      this._gameObject.direction = 'RIGHT';
+    } else if (velocityY > 0 && velocityX > 0) {
+      // Southeast
+      textureKey = ASSET_KEYS.CRAWL_SE;
+      this._gameObject.direction = 'DOWN';
+    } else if (velocityY > 0 && velocityX === 0) {
+      // South
+      textureKey = ASSET_KEYS.CRAWL_S;
+      this._gameObject.direction = 'DOWN';
+    } else if (velocityY > 0 && velocityX < 0) {
+      // Southwest
+      textureKey = ASSET_KEYS.CRAWL_SW;
+      this._gameObject.direction = 'DOWN';
+    } else if (velocityY === 0 && velocityX < 0) {
+      // West
+      textureKey = ASSET_KEYS.CRAWL_W;
+      this._gameObject.direction = 'LEFT';
+    } else if (velocityY < 0 && velocityX < 0) {
+      // Northwest
+      textureKey = ASSET_KEYS.CRAWL_NW;
+      this._gameObject.direction = 'UP';
+    } else {
+      // Default to south
+      textureKey = ASSET_KEYS.CRAWL_S;
+    }
+
+    this._gameObject.setTexture(textureKey);
+
+    // Ensure physics body offset stays consistent after texture change
+    const playerBody = this._gameObject.body as Phaser.Physics.Arcade.Body;
+    playerBody.setSize(12, 16, true).setOffset(this._gameObject.width / 2 - 5, this._gameObject.height / 2);
   }
 }

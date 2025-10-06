@@ -52,10 +52,56 @@
         "atlasURL": "main_green.json"
       },
       {
+        "type": "aseprite",
+        "key": "PLAYER_FLIPPED",
+        "textureURL": "main_green_flipped.png",
+        "atlasURL": "main_green.json"
+      },
+      {
         "type": "spritesheet",
         "key": "DAGGER",
         "url": "dagger.png",
         "frameConfig": { "frameWidth": 16, "frameHeight": 16 }
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_N",
+        "url": "crawl/n.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_NE",
+        "url": "crawl/ne.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_E",
+        "url": "crawl/e.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_SE",
+        "url": "crawl/se.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_S",
+        "url": "crawl/s.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_SW",
+        "url": "crawl/sw.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_W",
+        "url": "crawl/w.png"
+      },
+      {
+        "type": "image",
+        "key": "CRAWL_NW",
+        "url": "crawl/nw.png"
       }
     ]
   },

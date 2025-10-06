@@ -28,6 +28,9 @@ import { WeaponComponent } from '../../components/game-object/weapon-component';
 import { Sword } from '../weapons/sword';
 import { WallDetectionComponent } from '../../components/game-object/wall-detection-component';
 import { ClingState } from '../../components/state-machine/states/character/cling-state';
+import { InteractiveObjectComponent } from '../../components/game-object/interactive-object-component';
+import { INTERACTIVE_OBJECT_TYPE } from '../../common/common';
+import { CUSTOM_EVENTS, EVENT_BUS } from '../../common/event-bus';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -40,6 +43,9 @@ export type PlayerConfig = {
 export class Player extends CharacterGameObject {
   #collidingObjectsComponent: CollidingObjectsComponent;
   #weaponComponent: WeaponComponent;
+  #isCrawling: boolean;
+  #currentAction: string;
+  #interactionSensor: Phaser.GameObjects.Zone;
 
   constructor(config: PlayerConfig) {
     // create animation config for component
@@ -52,6 +58,8 @@ export class Player extends CharacterGameObject {
       IDLE_UP: { key: PLAYER_ANIMATION_KEYS.IDLE_UP, repeat: -1, ignoreIfPlaying: true },
       IDLE_LEFT: { key: PLAYER_ANIMATION_KEYS.IDLE_SIDE, repeat: -1, ignoreIfPlaying: true },
       IDLE_RIGHT: { key: PLAYER_ANIMATION_KEYS.IDLE_SIDE, repeat: -1, ignoreIfPlaying: true },
+      WALL_HUG_LEFT: { key: PLAYER_ANIMATION_KEYS.WALL_HUG_LEFT, repeat: -1, ignoreIfPlaying: true },
+      WALL_HUG_RIGHT: { key: PLAYER_ANIMATION_KEYS.WALL_HUG_RIGHT, repeat: -1, ignoreIfPlaying: true },
       HURT_DOWN: { key: PLAYER_ANIMATION_KEYS.HURT_DOWN, repeat: 0, ignoreIfPlaying: true },
       HURT_UP: { key: PLAYER_ANIMATION_KEYS.HURT_UP, repeat: 0, ignoreIfPlaying: true },
       HURT_LEFT: { key: PLAYER_ANIMATION_KEYS.HURT_SIDE, repeat: 0, ignoreIfPlaying: true },
@@ -113,6 +121,8 @@ export class Player extends CharacterGameObject {
     new HeldGameObjectComponent(this);
     new WallDetectionComponent(this);
     this.#weaponComponent = new WeaponComponent(this);
+    this.#isCrawling = false;
+    this.#currentAction = '';
     this.#weaponComponent.weapon = new Sword(
       this,
       this.#weaponComponent,
@@ -137,6 +147,21 @@ export class Player extends CharacterGameObject {
 
     // update physics body
     this.physicsBody.setSize(12, 16, true).setOffset(this.width / 2 - 5, this.height / 2);
+
+    // Create a larger interaction sensor area that doesn't affect physics
+    // This allows detecting nearby interactive objects without pressing toward them
+    // Sensor is 32x36 (10 pixels padding on all sides around 12x16 collision box)
+    // Position is set in update() to follow collision body center
+    this.#interactionSensor = config.scene.add.zone(this.x, this.y, 32, 36);
+    config.scene.physics.add.existing(this.#interactionSensor);
+    const sensorBody = this.#interactionSensor.body as Phaser.Physics.Arcade.Body;
+    sensorBody.setAllowGravity(false);
+    // Make it a sensor - it detects overlaps but doesn't cause physics collisions
+    sensorBody.pushable = false;
+  }
+
+  get interactionSensor(): Phaser.GameObjects.Zone {
+    return this.#interactionSensor;
   }
 
   get physicsBody(): Phaser.Physics.Arcade.Body {
@@ -147,13 +172,89 @@ export class Player extends CharacterGameObject {
     return this.#weaponComponent;
   }
 
+  get isCrawling(): boolean {
+    return this.#isCrawling;
+  }
+
+  set isCrawling(value: boolean) {
+    this.#isCrawling = value;
+  }
+
   public collidedWithGameObject(gameObject: GameObject): void {
     this.#collidingObjectsComponent.add(gameObject);
   }
 
+  #getAvailableAction(): string {
+    console.log('[Player] Checking available action. Colliding objects:', this.#collidingObjectsComponent.objects.length);
+
+    // Check for interactive objects first (highest priority)
+    if (this.#collidingObjectsComponent.objects.length > 0) {
+      const collisionObject = this.#collidingObjectsComponent.objects[0];
+      console.log('[Player] Collision object:', collisionObject);
+
+      const interactiveObjectComponent =
+        InteractiveObjectComponent.getComponent<InteractiveObjectComponent>(collisionObject);
+      console.log('[Player] Interactive component:', interactiveObjectComponent, 'canInteract:', interactiveObjectComponent?.canInteractWith());
+
+      if (interactiveObjectComponent !== undefined && interactiveObjectComponent.canInteractWith()) {
+        console.log('[Player] Object type:', interactiveObjectComponent.objectType);
+
+        // OPEN: Can open chests even while crawling
+        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
+          console.log('[Player] Returning Open');
+          return 'Open';
+        }
+
+        // GRAB: Can only grab pots when NOT crawling
+        if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP) {
+          console.log('[Player] PICKUP type detected, crawling:', this.#isCrawling);
+          if (!this.#isCrawling) {
+            console.log('[Player] Returning Grab');
+            return 'Grab';
+          }
+          // If crawling near a pot, show blank (can't grab)
+          console.log('[Player] Crawling, returning blank for pot');
+          return '';
+        }
+      }
+    }
+
+    // Crawl/Stand toggle only available when idle
+    const currentState = this._stateMachine.currentStateName;
+    console.log('[Player] No interactive object, state:', currentState);
+    if (currentState === CHARACTER_STATES.IDLE_STATE) {
+      if (this.#isCrawling) {
+        console.log('[Player] Returning Stand');
+        return 'Stand';
+      } else {
+        console.log('[Player] Returning Crawl');
+        return 'Crawl';
+      }
+    }
+
+    // When not idle and no interactive object available, show blank
+    console.log('[Player] Returning blank (not idle, no objects)');
+    return '';
+  }
+
   public update(): void {
     super.update();
-    this.#collidingObjectsComponent.reset();
+
+    // Update interaction sensor position to follow collision body center
+    const playerBody = this.body as Phaser.Physics.Arcade.Body;
+    this.#interactionSensor.setPosition(playerBody.center.x, playerBody.center.y);
+
     this.#weaponComponent.update();
+
+    // Check if available action has changed and emit event
+    const newAction = this.#getAvailableAction();
+    if (newAction !== this.#currentAction) {
+      console.log('[Player] Action changed from', this.#currentAction, 'to', newAction);
+      this.#currentAction = newAction;
+      EVENT_BUS.emit(CUSTOM_EVENTS.PLAYER_ACTION_CHANGED, newAction);
+    }
+
+    // Reset colliding objects AFTER checking available action
+    this.#collidingObjectsComponent.reset();
   }
 }
